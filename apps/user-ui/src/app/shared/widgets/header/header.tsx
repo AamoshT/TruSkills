@@ -4,7 +4,6 @@ import { Search, HeartIcon, ShoppingCart } from 'lucide-react';
 import ProfileIcon from '@/assets/svgs/profile-icon';
 import HeaderBottom from './header-bottom';
 
-
 const Header = () => {
   return (
     <div className ='w-full bg-white'>
@@ -23,7 +22,7 @@ const Header = () => {
             </div>
             <div className= "flex items-center gap-8">
                     <div className = 'flex items-center gap-2'>
-                      <Link href={"/login"}
+                      <Link href={"./login"}
                       className = "border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a] ">
                         <ProfileIcon />
                       </Link>
