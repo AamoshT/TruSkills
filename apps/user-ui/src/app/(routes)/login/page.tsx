@@ -94,7 +94,7 @@ const Login = () => {
                {serverError && <p className="text-red-500 text-sm mt-3">{serverError}</p>}
             </div>
           </form>
-        </div>
+        </div> 
     </div>
     </div>
   )
