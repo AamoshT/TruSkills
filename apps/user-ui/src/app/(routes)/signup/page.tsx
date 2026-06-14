@@ -6,7 +6,7 @@ import { useRouter } from 'next/dist/client/components/navigation';
 import Link from 'next/dist/client/link';
 import React, { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 type FormData = {
   name: string;
@@ -58,6 +58,22 @@ const Signup = () => {
       setTimer(60);
       startResendTimer();
     }
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: async () => {
+      if (!userData) return;
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/verify-user`, 
+        {
+        ...userData,
+        otp: otp.join("")
+      }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      router.push("/login");
+     }
   });
 
   const password = watch("password");
@@ -219,8 +235,10 @@ const Signup = () => {
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     />))}
             </div>
-            <button className = "w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg">
-              Verify OTP
+            <button className = "w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg"
+            disabled ={verifyOtpMutation.isPending}
+            onClick={() => verifyOtpMutation.mutate()}>
+              {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
             </button>
             <p className="text-center text-sm mt-4">
               {canResend ? ( 
@@ -231,6 +249,14 @@ const Signup = () => {
                 `Resend OTP in ${timer}s`
               )}
             </p>
+            {
+              verifyOtpMutation.isError &&
+              verifyOtpMutation.error instanceof AxiosError && (
+                <p className="text-red-500 text-sm mt-2">
+                  {verifyOtpMutation.error.response?.data?.message || verifyOtpMutation.error.message}
+                </p>
+              )
+            }
 
       </div>
   )}

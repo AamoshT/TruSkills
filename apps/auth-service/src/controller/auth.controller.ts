@@ -19,7 +19,7 @@ export const userRegistration = async (req:Request ,res:Response, next:NextFunct
  };
    await checkOtpRestriction(email, next);
    await trackOtpRequests(email,next);
-   await sendOtp( email, name, 'user-activation-email');
+   await sendOtp( name, email, 'user-activation-email');
    res.status (200).json({
       message: 'OTP sent to your email address',
    })

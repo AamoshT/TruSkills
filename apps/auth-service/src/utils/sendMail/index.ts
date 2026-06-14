@@ -15,6 +15,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("❌ Mailer error:", error.message);
+  } else {
+    console.log("✅ Mail server ready");
+  }
+});
+
 //render an EJS email template here
 
 const renderEmailTemplate = async (templateName: string, data : Record<string, any>) : Promise<string> => {

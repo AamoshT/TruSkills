@@ -1,5 +1,7 @@
 "use client"
 import GoogleButton from '@/app/shared/components/GoogleButton';
+import { useMutation } from '@tanstack/react-query';
+import axios, { AxiosError } from 'axios';
 import { Eye, EyeOffIcon} from 'lucide-react';
 import { useRouter } from 'next/dist/client/components/navigation';
 import Link from 'next/dist/client/link';
@@ -22,14 +24,31 @@ const Login = () => {
     register, handleSubmit, formState: { errors } 
         } = useForm<FormData>();
 
-    const onSubmit = async (data: FormData) => {}
+    const loginMutation = useMutation({
+      mutationFn: async (data: FormData) => {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/login-user`, data, { withCredentials: true });
+        return response.data;
+      },
+      onSuccess: (data) => {
+        setServerError(null);
+        router.push('/');
+      },
+      onError: (error:AxiosError) => {
+        const errorMessage = (error.response ?.data as {message ?: string}) ?. message?? "Invalid Credentials";
+        setServerError(errorMessage);
+    },
+    });
+
+    const onSubmit = async (data: FormData) => {
+      loginMutation.mutate(data);
+    }
   return(
     <div className ="w-full py-10 min-h-[85vh] bg-[#f1f1f1]">
       <h1 className="text-4xl font-Poppins font-semibold text-black text-center">Login</h1>
       <p className="text-center text-lg font-medium py-3  text-[#000099]">Home . Login</p>
       <div className ="w-full justify-center items-center flex">
-        <div className=" md:w-[480px] p-8 bg-white shadow rounde-lg ">
-          <h3 className = "text=3xl font-semibold text-center mb-2" > Login to TruSkills </h3>
+        <div className=" md:w-[480px] p-8 bg-white shadow rounded-lg ">
+          <h3 className = "text-3xl font-semibold text-center mb-2" > Login to TruSkills </h3>
           <p className= " text-center text-gray-500 mb-4"> Dont Have an account?
             <Link href="/signup" className="text-blue-500">
               Sign up
@@ -55,9 +74,7 @@ const Login = () => {
               }
             })}
             />
-            {errors.email && (
-              <p className = "text-red-500 text-sm"> {String(errors.email.message)}</p>
-            )}
+            
             {errors.email && <p className="text-red-500 text-sm mb-3">{errors.email.message}</p>}
             <label className =" block text-gray-700 mb-1"> Password </label>
             <div className="relative">
@@ -75,6 +92,7 @@ const Login = () => {
               <button type="button" className=" absolute inset-y-3 right-3 flex  text-gray-400" onClick={() => setPasswordVisible(!passwordVisible)}>
                 {passwordVisible ? <Eye /> : <EyeOffIcon />}
               </button>
+              </div>
              {errors.password && (
               <p className = "text-red-500 text-sm"> {String(errors.password.message)}</p>
               )}
@@ -88,11 +106,11 @@ const Login = () => {
                   Forgot Password?
                 </Link>
               </div>   
-              <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded mt-6 hover:bg-blue-600 transition duration-300">
-                Login
+              <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded mt-6 hover:bg-blue-600 transition duration-300"
+              disabled={loginMutation.isPending}>
+                {loginMutation.isPending ? "Logging in..." : "Login"}
               </button>
                {serverError && <p className="text-red-500 text-sm mt-3">{serverError}</p>}
-            </div>
           </form>
         </div> 
     </div>
