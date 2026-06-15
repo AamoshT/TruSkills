@@ -28,6 +28,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.71.2",
+    "react-hot-toast": "^2.6.0",
     "root": "github:tanstack/react-query",
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.1"
