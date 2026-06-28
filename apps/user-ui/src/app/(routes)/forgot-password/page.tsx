@@ -46,7 +46,8 @@ const ForgotPassword = () => {
             { email });
         return response.data;
       },
-      onSuccess: ({email}) => {
+      onSuccess: (_, 
+        email) => {
         setServerError(null);
         setuserEmail(email);
         setStep('otp');

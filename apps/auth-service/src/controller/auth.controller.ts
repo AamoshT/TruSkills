@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { checkOtpRestriction, validateRegistrationData,trackOtpRequests, sendOtp, verifyOtp, handleForgotPassword, verifyForgotPasswordOtp} from '../utils/auth.helper';
+import { checkOtpRestriction, validateRegistrationData,trackOtpRequests, sendOtp, verifyOtp, handleForgotPassword, verifyForgotPasswordOtp, resetUserPassword as resetPassword} from '../utils/auth.helper';
 import prisma from '@packages/libs/prisma';
 import { AuthError, ValidationError } from '@packages/error-handler';
 import bcrypt from 'bcryptjs';
-import jwt from "jsonwebtoken";
+import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from '../utils/cookies/setCookie';
+
 
 
 export const userRegistration = async (req:Request ,res:Response, next:NextFunction) => {
@@ -99,17 +100,64 @@ export const loginUser = async (req:Request ,res:Response, next:NextFunction) =>
     }
   };
 
+export const refreshToken = async (req:Request ,res:Response, next:NextFunction) => {
+  try {
+    const refreshToken = req.cookies.refreshToken; // FIX: was req.cookies.refresh_token (didn't match setCookie's 'refreshToken' name)
+    // Implement refresh token logic here
+    if (!refreshToken) {
+      return next(new ValidationError('Refresh token not found')); // FIX: was missing next()
+    }
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string) as 
+    { id: string, role: string };
+    if (!decoded || !decoded.id) { // FIX: was decoded.id !== decoded.role, which compares unrelated fields
+      return next(new AuthError('Forbidden: Invalid refresh token')); // FIX: was JsonWebTokenError (wrong usage) and missing next()
+    }
+    let account;
+    //if (decoded.role === 'user') {
+    const user = await prisma.users.findUnique({ where: { id: decoded.id } });
+    if (!user) {
+      return next(new AuthError('Forbidden: User not found')); // FIX: typo "Forbiden" + missing next()
+    }
+
+    // FIX: getLoggedInUser was nested inside refreshToken (invalid) and broke the brace structure — moved out below as its own export
+
+    const newAccessToken = jwt.sign({ 
+      id: decoded.id, role: decoded.role }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
+      setCookie(res, 'accessToken', newAccessToken);
+      return res.status(201).json({
+        success: true,
+        message: 'Access token refreshed successfully',
+        accessToken: newAccessToken,
+      });
+  } catch (error) {
+    return next(error);
+  }
+}; // FIX: was missing closing brace, causing everything below to be unreachable/malformed
+
+//get logged in user
+export const getLoggedInUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user;
+    res.status(201).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+     next(error);
+  }
+};
+
 //user forgot password
 export const userForgotPassword = async (req:Request ,res:Response, next:NextFunction) => {
     await handleForgotPassword(req, res, next, "user");
   };
 
   //verify forgot password OTP 
-export const verifyUserForgotPassword = async (req:Request ,res:Response, next:NextFunction) => {
+export const verifyForgotPassword = async (req:Request ,res:Response, next:NextFunction) => {
     await verifyForgotPasswordOtp(req, res, next);
 };
 
 //reset user password
 export const resetUserPassword = async (req:Request ,res:Response, next:NextFunction) => {
-    await resetUserPassword(req, res, next);
+    await resetPassword(req, res, next);
 };
