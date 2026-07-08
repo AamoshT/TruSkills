@@ -21,10 +21,10 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
         const account = await prisma.users.findUnique({ where: { id: decoded.id } });
 
         req.user = account; //
-        next();
         if (!account) { 
             return res.status(401).json({ message: 'Unauthorized: User not found' });
         }
+        return next();
 
 
     }
