@@ -109,14 +109,14 @@ export const refreshToken = async (req:Request ,res:Response, next:NextFunction)
     }
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string) as 
     { id: string, role: string };
-    if (!decoded || !decoded.id) { // FIX: was decoded.id !== decoded.role, which compares unrelated fields
-      return next(new AuthError('Forbidden: Invalid refresh token')); // FIX: was JsonWebTokenError (wrong usage) and missing next()
+    if (!decoded || !decoded.id || !decoded.role) { // FIX: was decoded.id !== decoded.role, which compares unrelated fields
+      return new JsonWebTokenError('Forbidden: Invalid refresh token'); // FIX: was JsonWebTokenError (wrong usage) and missing next()
     }
-    let account;
-    //if (decoded.role === 'user') {
-    const user = await prisma.users.findUnique({ where: { id: decoded.id } });
+   // let account;
+    //if (decoded.role === 'user')
+        const user = await prisma.users.findUnique({ where: { id: decoded.id } });
     if (!user) {
-      return next(new AuthError('Forbidden: User not found')); // FIX: typo "Forbiden" + missing next()
+      return new AuthError('Forbidden: User not found'); // FIX: typo "Forbiden" + missing next()
     }
 
     // FIX: getLoggedInUser was nested inside refreshToken (invalid) and broke the brace structure — moved out below as its own export
@@ -125,17 +125,14 @@ export const refreshToken = async (req:Request ,res:Response, next:NextFunction)
       id: decoded.id, role: decoded.role }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
       setCookie(res, 'accessToken', newAccessToken);
       return res.status(201).json({
-        success: true,
-        message: 'Access token refreshed successfully',
-        accessToken: newAccessToken,
-      });
+        success: true});
   } catch (error) {
     return next(error);
   }
 }; // FIX: was missing closing brace, causing everything below to be unreachable/malformed
 
 //get logged in user
-export const getLoggedInUser = async (req: Request, res: Response, next: NextFunction) => {
+export const getUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
     res.status(201).json({
