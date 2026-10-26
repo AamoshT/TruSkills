@@ -8,7 +8,9 @@ let isRefreshing = false;
 let  refreshSubscribers: (() => void)[] = [];
 //handel logout and prevent infinite loops
 const handleLogout = () => {
-    if (window.location.pathname !== '/login') {
+    const publicRoutes = ['/login', '/signup', '/forgot-password'];
+
+    if (!publicRoutes.includes(window.location.pathname)) {
         window.location.href = '/login';
     }
 };
