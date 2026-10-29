@@ -45,25 +45,25 @@ axiosInstance.interceptors.response.use(
                     });
                 });
             }
+            originalRequest._retry = true;
+            isRefreshing = true;
+            try{
+                await axios.post(
+                    `${process.env.NEXT_PUBLIC_SERVER_URI}/api/refresh-token-user`,
+                    {},
+                    { withCredentials: true }
+                );
+                isRefreshing = false;
+                onRefreshSuccess();
+                return axiosInstance(originalRequest);
+            } catch (error) {
+                isRefreshing = false;
+                refreshSubscribers = [];
+                handleLogout();
+                return Promise.reject(error);
+            }
         }
-        originalRequest._retry = true;
-        isRefreshing = true;
-        try{
-            await axios.post(
-                `${process.env.NEXT_PUBLIC_SERVER_URI}/api/auth/refresh-token-user`,
-                {},
-                { withCredentials: true }
-            );
-            isRefreshing = false;
-            onRefreshSuccess();
-            return axiosInstance(originalRequest);
-        } catch (error) {
-            isRefreshing = false;
-           refreshSubscribers = [];
-            handleLogout();
-            return Promise.reject(error);
-        } 
-    return Promise.reject(error);
+        return Promise.reject(error);
     }
 );
 
