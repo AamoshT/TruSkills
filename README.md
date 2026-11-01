@@ -1,101 +1,443 @@
 # TruSkills
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+**A student-to-student skills marketplace for discovering, offering, and booking services within a university community.**
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+TruSkills connects students who have useful skills with students who need them. Whether it's tutoring, photography, design, programming, music lessons, résumé help, or another student service, TruSkills provides one place to discover providers, book services, communicate, and manage the entire process.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+Built with a **microservices architecture**, TruSkills combines real-time communication, event-driven services, caching, recommendations, and secure authentication into a scalable full-stack marketplace.
 
-## Run tasks
+---
 
-To run the dev server for your app, use:
+## Features
 
-```sh
-npx nx serve auth-service
+### Student Marketplace
+
+- Discover services offered by other students
+- Search and filter services by category
+- View detailed service and provider profiles
+- Save services for later
+- Book services directly through the platform
+- Track active and completed bookings
+
+### Provider Experience
+
+- Create and manage a provider profile
+- Create, update, and manage service listings
+- Configure pricing, packages, and service details
+- Manage incoming bookings
+- Create discounts and promotional offers
+- Track services and customer activity through a dedicated dashboard
+
+### Authentication & Security
+
+- Email-based account registration
+- OTP email verification
+- Secure login and logout
+- Access and refresh token authentication
+- Password recovery and reset
+- Role-based authorization
+- HTTP-only cookie-based sessions
+- Protected user and provider routes
+
+### Real-Time Communication
+
+- Direct messaging between students and providers
+- Real-time conversations using WebSockets
+- Conversation history
+- Booking-related communication
+
+### Personalized Recommendations
+
+TruSkills uses user activity to provide personalized service recommendations.
+
+Events such as service views, searches, saves, and bookings are streamed through Kafka and processed by the recommendation system to continuously improve suggestions.
+
+### Payments & Booking
+
+- Secure checkout flow
+- Provider payment onboarding
+- Booking and order management
+- Payment status tracking
+- Service discounts and promotional codes
+
+---
+
+## Architecture
+
+TruSkills follows a distributed **microservices architecture** with independently responsible services communicating through APIs and asynchronous events.
+
+```text
+                         ┌─────────────────────┐
+                         │      Frontend       │
+                         │   Next.js / React   │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │     API Gateway     │
+                         └──────────┬──────────┘
+                                    │
+             ┌──────────────────────┼──────────────────────┐
+             │                      │                      │
+             ▼                      ▼                      ▼
+      ┌─────────────┐       ┌──────────────┐       ┌─────────────┐
+      │    Auth     │       │   Service    │       │   Booking   │
+      │   Service   │       │   Service    │       │   Service   │
+      └─────────────┘       └──────────────┘       └─────────────┘
+             │                      │                      │
+             └──────────────────────┼──────────────────────┘
+                                    │
+                         ┌──────────▼──────────┐
+                         │       Kafka         │
+                         │    Event Stream     │
+                         └──────────┬──────────┘
+                                    │
+                  ┌─────────────────┴─────────────────┐
+                  │                                   │
+                  ▼                                   ▼
+        ┌──────────────────┐                ┌──────────────────┐
+        │ Recommendation   │                │       Chat       │
+        │     Service      │                │     Service      │
+        └──────────────────┘                └──────────────────┘
+
+              MongoDB Atlas • Redis • WebSockets
 ```
 
-To create a production bundle:
+### Service Responsibilities
 
-```sh
-npx nx build auth-service
+| Service | Responsibility |
+| --- | --- |
+| **API Gateway** | Central entry point and request routing |
+| **Auth Service** | Registration, authentication, OTP verification, token management, and account recovery |
+| **Service/Listing Service** | Service creation, discovery, categories, provider listings, and service management |
+| **Booking Service** | Booking lifecycle, pricing, discounts, and transaction state |
+| **Chat Service** | Real-time communication and conversation management |
+| **Recommendation Service** | Personalized service and provider recommendations |
+| **Kafka Pipeline** | Asynchronous communication and user activity events |
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- TanStack Query
+- Axios
+- React Hook Form
+
+### Backend
+
+- Node.js
+- Express
+- TypeScript
+- Prisma
+- REST APIs
+- WebSockets
+
+### Data & Infrastructure
+
+- MongoDB Atlas
+- Redis
+- Apache Kafka
+- Docker
+- AWS EC2
+- AWS ECR
+
+### Authentication
+
+- JWT access and refresh tokens
+- HTTP-only cookies
+- OTP email verification
+- SMTP
+- Role-based access control
+
+### Recommendation System
+
+- Kafka event streams
+- Redis for fast user state
+- MongoDB for persistent interaction data
+- TensorFlow-based recommendation processing
+
+### Development & DevOps
+
+- Nx Monorepo
+- Docker / Docker Compose
+- GitHub Actions
+- GitHub
+- CI/CD
+
+---
+
+## Repository Structure
+
+```text
+TruSkills/
+│
+├── apps/
+│   ├── api-gateway/
+│   ├── auth-service/
+│   ├── user-ui/
+│   ├── seller-ui/
+│   ├── listing-service/
+│   ├── booking-service/
+│   ├── chat-service/
+│   └── recommendation-service/
+│
+├── packages/
+│   ├── middleware/
+│   ├── shared-types/
+│   └── shared-utils/
+│
+├── docker-compose.yml
+├── nx.json
+├── package.json
+└── README.md
 ```
 
-To see all available targets to run for a project, run:
+> Internal service names may retain `seller` terminology while the product-facing experience refers to students offering services as **providers**.
 
-```sh
-npx nx show project auth-service
+---
+
+## Event-Driven Recommendations
+
+User interactions generate events that can be consumed asynchronously without blocking the main application flow.
+
+```text
+Student Action
+      │
+      ▼
+API / Service
+      │
+      ▼
+Kafka Event
+      │
+      ├──────────────► Analytics / Activity Processing
+      │
+      ▼
+Recommendation Service
+      │
+      ├── Redis User State
+      │
+      └── MongoDB Interaction History
+      │
+      ▼
+Recommendation Model
+      │
+      ▼
+Personalized Services
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+Example events include:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/node:app demo
+```text
+service.viewed
+service.saved
+service.searched
+booking.created
+booking.completed
+provider.viewed
 ```
 
-To generate a new library, use:
+This keeps recommendation processing decoupled from the core marketplace services and allows the system to scale independently.
 
-```sh
-npx nx g @nx/node:lib mylib
+---
+
+## Authentication Flow
+
+```text
+Register
+   │
+   ▼
+Email OTP
+   │
+   ▼
+Verify Account
+   │
+   ▼
+Login
+   │
+   ├── Access Token
+   └── Refresh Token
+           │
+           ▼
+     HTTP-only Cookies
+           │
+           ▼
+     Protected Routes
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+When an access token expires, the frontend can request a new token using the refresh token without requiring the user to log in again.
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-## Set up CI!
+## Getting Started
 
-### Step 1
+### Prerequisites
 
-To connect to Nx Cloud, run the following command:
+Make sure you have installed:
 
-```sh
-npx nx connect
+- Node.js
+- npm
+- Docker
+- Docker Compose
+- Git
+
+You will also need access to the external services configured for the project, including MongoDB, Redis, email delivery, and any payment infrastructure.
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/AamoshT/TruSkills.git
+cd TruSkills
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+### Install Dependencies
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+```bash
+npm install
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Configure Environment Variables
 
-## Install Nx Console
+Create the required `.env` and `.env.local` files for the services you intend to run.
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+Example:
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```env
+DATABASE_URL=
+REDIS_DATABASE_URI=
 
-## Useful links
+ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
 
-Learn more:
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+NEXT_PUBLIC_SERVER_URI=http://localhost:8080
+NEXT_PUBLIC_SERVER_URL=http://localhost:8080
+```
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Never commit real credentials or secrets to the repository.
+
+### Generate Prisma Client
+
+```bash
+npx prisma generate
+```
+
+If setting up the database for the first time:
+
+```bash
+npx prisma db push
+```
+
+### Start Backend Services
+
+```bash
+npm run dev
+```
+
+### Start the Student UI
+
+```bash
+npm run user-ui
+```
+
+### Start the Provider UI
+
+```bash
+npm run seller-ui
+```
+
+The exact ports used by individual services can be configured through their respective environment files.
+
+---
+
+## Docker
+
+Services can be containerized independently and orchestrated using Docker Compose.
+
+```bash
+docker compose up --build
+```
+
+Each service maintains its own responsibility while shared infrastructure such as Kafka and Redis can be provided through the development Compose environment.
+
+---
+
+## CI/CD
+
+TruSkills uses GitHub Actions to automate the development and deployment workflow.
+
+The pipeline can perform:
+
+```text
+Push / Pull Request
+        │
+        ▼
+Install Dependencies
+        │
+        ▼
+Lint & Type Check
+        │
+        ▼
+Build / Test
+        │
+        ▼
+Build Docker Images
+        │
+        ▼
+Push to Amazon ECR
+        │
+        ▼
+Deploy Services
+```
+
+---
+
+## Design Philosophy
+
+TruSkills was built around a simple idea: **students already have valuable skills, but discovering those skills within a campus community is unnecessarily difficult.**
+
+Instead of treating every student as only a buyer or only a seller, TruSkills allows the same student to participate on both sides of the marketplace.
+
+The technical architecture follows the same principle of flexibility. Authentication, listings, bookings, messaging, and recommendations are separated so that individual parts of the platform can evolve and scale without requiring the entire system to be rewritten.
+
+---
+
+## Future Improvements
+
+Potential extensions include:
+
+- University email/domain verification
+- Provider ratings and reviews
+- Availability calendars
+- Smarter recommendation models
+- Semantic service search
+- Provider analytics
+- Push notifications
+- Dispute and refund workflows
+- Multi-university support
+- Mobile applications
+
+---
+
+## Contributors
+
+**Ananga Tripathee**  
+Computer Science — Truman State University
+
+**Aamosh Thapa**  
+Computer Science — Truman State University
+
+---
+
+## License
+
+This project is intended for educational and portfolio purposes. Add an appropriate open-source license before redistributing or accepting external contributions.
