@@ -4,15 +4,16 @@ import { Eye, EyeOffIcon } from 'lucide-react';
 import { useRouter } from 'next/dist/client/components/navigation';
 import Link from 'next/dist/client/link';
 import React, { useRef, useState } from 'react'
-import { useForm } from 'react-hook-form';
+import { set, useForm } from 'react-hook-form';
 import axios, { AxiosError } from 'axios';
 import countries from '@/utils/countries';
+import CreateShop from '@/shared/modules/auth/create-shop';
 
 
 
 
 const Signup = () => {
-    const [activeStep, setActiveStep] = useState(1);
+    const [activeStep, setActiveStep] = useState(2);// currently change this for checking active state Later this will be dynamic
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -20,7 +21,8 @@ const Signup = () => {
   const [canResend, setCanResend] = useState(true);
   const [timer, setTimer] = useState(60);
   const [otp, setOtp] = useState(["", "", "", ""]);
-  const [userData, setUserData] = useState<FormData | null>(null);
+  const [sellerData, setSellerData] = useState<FormData | null>(null);
+  const [sellerId, setSellerId] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
 
@@ -45,11 +47,11 @@ const Signup = () => {
 
   const signupMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/user-registration`, data);
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/seller-registration`, data);
       return response.data;
     },
     onSuccess : (_, formData ) => {
-      setUserData(formData);
+      setSellerData(formData);
       setShowOtp(true);
       setCanResend(false);
       setTimer(60);
@@ -59,17 +61,18 @@ const Signup = () => {
 
   const verifyOtpMutation = useMutation({
     mutationFn: async () => {
-      if (!userData) return;
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/verify-user`, 
+      if (!sellerData) return;
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/verify-seller`,
         {
-        ...userData,
+        ...sellerData,
         otp: otp.join("")
       }
       );
       return response.data;
     },
-    onSuccess: () => {
-      router.push("/login");
+    onSuccess: (data) => {
+      setSellerId(data ?.seller?.id);
+      setActiveStep(2);
      }
   });
 
@@ -95,8 +98,8 @@ const Signup = () => {
     }
   }
   const resendOtp = () => {
-    if (userData){
-      signupMutation.mutate(userData);
+    if (sellerData){
+      signupMutation.mutate(sellerData);
     } ;
   }
 
@@ -286,6 +289,12 @@ const Signup = () => {
                       signupMutation.error.message}
                      </p>
                        )}
+                        <p className = "text-center pt-3">
+              Already have an account?{" "}
+              <Link href={"/login"} className="text-blue-500">
+                Login
+              </Link>
+            </p>
                      </form>
          ) : (
             <div>
@@ -331,6 +340,12 @@ const Signup = () => {
   )}
             </>
          )}
+        {activeStep === 2 && (
+          <CreateShop
+            sellerId={sellerId}
+            setActiveStep={setActiveStep}
+          />
+        )}
       
       </div>
     </div>

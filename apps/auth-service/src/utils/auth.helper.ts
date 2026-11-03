@@ -87,7 +87,7 @@ export const handleForgotPassword = async (req:Request ,res:Response, next:NextF
         const {email} = req.body;
         if (!email)throw new ValidationError('Email is required');
         //find user by email
-        const user = userType === "user" && await prisma.users.findUnique({ where: { email } });
+        const user = userType === "user" ? await prisma.users.findUnique({ where: { email } }) : await prisma.sellers.findUnique({ where: { email } });
         if (!user) {
             throw new ValidationError('Email not found');
         }
@@ -96,7 +96,10 @@ export const handleForgotPassword = async (req:Request ,res:Response, next:NextF
         await trackOtpRequests(email, next);
 
         //generate and send OTP for password reset
-        await sendOtp(user.name, email, 'forgot-password-user-mail');
+        await sendOtp(user.name, email, 
+            userType === "user" 
+            ? 'forgot-password-user-mail' 
+            : 'forgot-password-seller-mail');// need to create a template for forgot password email for seller
         res.status(200).json({
             message: 'OTP sent to your email address.Please verify your account',
         });
