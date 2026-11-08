@@ -18,12 +18,27 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
             return res.status(401).json({ message: 'Unauthorized: Invalid token' });
         }
 
-        const account = await prisma.users.findUnique({ where: { id: decoded.id } });
+        let account;
+        if (decoded.role === "user") {
+            account =await prisma.users.findUnique({
+                where: { id: decoded.id },
+            });
+            req.user = account;
+        }
+        else if (decoded.role === "seller") {
+            account = await prisma.sellers.findUnique({
+                where: { id: decoded.id },
+                include: {
+                    shop: true,
+                },
+            });
+            req.seller = account;
+        }
 
-        req.user = account; //
         if (!account) { 
             return res.status(401).json({ message: 'Unauthorized: User not found' });
         }
+        req.role = decoded.role;
         return next();
 
 

@@ -13,7 +13,7 @@ import CreateShop from '@/shared/modules/auth/create-shop';
 
 
 const Signup = () => {
-    const [activeStep, setActiveStep] = useState(2);// currently change this for checking active state Later this will be dynamic
+  const [activeStep, setActiveStep] = useState(3);// currently change this for checking active state Later this will be dynamic
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -25,8 +25,6 @@ const Signup = () => {
   const [sellerId, setSellerId] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-
-  const router = useRouter();
 
   const {
     register, handleSubmit, watch, formState: { errors }
@@ -103,6 +101,16 @@ const Signup = () => {
     } ;
   }
 
+  const connectStripe = async () => {
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/api/create-stripe-link`, { sellerId });
+      if ( response.data.url) {
+        window.location.href = response.data.url; // Redirect to Stripe onboarding
+      }
+    } catch (error) {
+      console.error("Error connecting to Stripe:", error);
+    }
+  }
   return (
     <div className="w-full flex flex-col items-center pt-10 min-h-screen">
         {/* Stepper */}
@@ -346,7 +354,18 @@ const Signup = () => {
             setActiveStep={setActiveStep}
           />
         )}
-      
+
+        {activeStep === 3 && (
+          <div className="text-center">
+            <h3 className="text-xl font-semibold">WithDraw Method!</h3>
+            <br />
+            <button className="w-full bg-blue-500 text-white py-2 rounded mt-4 hover:bg-blue-600 transition duration-300"
+            onClick={connectStripe}>
+              Connect Stripe
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
     
